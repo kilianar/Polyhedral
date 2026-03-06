@@ -771,29 +771,35 @@ lemma rank_eq_rank_add_rank_quot_linSpan {F G : PointedCone R M} (hFG : F ≤ G)
     _ = (G.quot F.linSpan).rank + F.rank := rfl
     _ = F.rank + (G.quot F.linSpan).rank := by simp [add_comm]
 
-/-- Finite-dimensionality descends to a contained cone's span. -/
-lemma moduleFinite_linSpan_of_le {F G : PointedCone R M} [Module.Finite R G.linSpan] (hFG : F ≤ G) :
-    Module.Finite R F.linSpan := by
-  exact Module.Finite.of_injective (Submodule.inclusion (Submodule.span_mono hFG))
-    (Submodule.inclusion_injective (Submodule.span_mono hFG))
+/-- Finite rank descends to a contained cone's span. -/
+lemma finRank_of_le {F G : PointedCone R M} (hG : G.FinRank) (hFG : F ≤ G) :
+    F.FinRank := by
+  letI : Module.Finite R G.linSpan := Module.Finite.iff_fg.mpr hG
+  exact Module.Finite.iff_fg.mp <|
+    Module.Finite.of_injective (Submodule.inclusion (Submodule.span_mono hFG))
+      (Submodule.inclusion_injective (Submodule.span_mono hFG))
 
-/-- Finite-dimensionality descends to the span of a quotient cone. -/
-lemma moduleFinite_linSpan_quot {F G : PointedCone R M} [Module.Finite R G.linSpan] :
-    Module.Finite R (G.quot F.linSpan).linSpan := by
-  exact (PointedCone.linSpan_quot (C := G) (S := F.linSpan)).symm ▸
-    (inferInstance : Module.Finite R (Submodule.map F.linSpan.mkQ G.linSpan))
+/-- Finite rank descends to the span of a quotient cone. -/
+lemma finRank_quot_linSpan {F G : PointedCone R M} (hG : G.FinRank) :
+    (G.quot F.linSpan).FinRank := by
+  change (G.quot F.linSpan).linSpan.FG
+  simpa [PointedCone.linSpan_quot] using Submodule.FG.map (f := F.linSpan.mkQ) hG
 
-/-- Finite-dimensionality descends to the span of a quotient by a submodule. -/
-lemma moduleFinite_linSpan_quot_submodule (G : PointedCone R M) (S : Submodule R M)
-    [Module.Finite R G.linSpan] :
-    Module.Finite R (G.quot S).linSpan := by
-  exact (PointedCone.linSpan_quot (C := G) (S := S)).symm ▸
-    (inferInstance : Module.Finite R (Submodule.map S.mkQ G.linSpan))
+/-- Finite rank descends to the span of a quotient by a submodule. -/
+lemma finRank_quot_submodule (G : PointedCone R M) (S : Submodule R M) (hG : G.FinRank) :
+    (G.quot S).FinRank := by
+  change (G.quot S).linSpan.FG
+  simpa [PointedCone.linSpan_quot] using Submodule.FG.map (f := S.mkQ) hG
 
 /-- Dimension-addition for cone finrank along a contained subcone. -/
 lemma finrank_eq_finrank_add_finrank_quot_linSpan {F G : PointedCone R M}
-    [Module.Finite R G.linSpan] (hFG : F ≤ G) :
+    (hG : G.FinRank) (hFG : F ≤ G) :
     G.finrank = F.finrank + (G.quot F.linSpan).finrank := by
+  letI : Module.Finite R G.linSpan := Module.Finite.iff_fg.mpr hG
+  letI : Module.Finite R F.linSpan := Module.Finite.iff_fg.mpr <|
+    PointedCone.finRank_of_le (R := R) (M := M) (F := F) (G := G) hG hFG
+  letI : Module.Finite R (G.quot F.linSpan).linSpan := Module.Finite.iff_fg.mpr <|
+    PointedCone.finRank_quot_linSpan (R := R) (M := M) (F := F) (G := G) hG
   let f : G.linSpan →ₗ[R] (M ⧸ F.linSpan) := (F.linSpan.mkQ).domRestrict G.linSpan
   have hker : Module.finrank R f.ker = Module.finrank R F.linSpan := by
     rw [show f.ker = Submodule.comap G.linSpan.subtype F.linSpan by

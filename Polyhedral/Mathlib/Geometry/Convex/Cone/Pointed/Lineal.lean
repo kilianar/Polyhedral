@@ -503,16 +503,19 @@ lemma rank_eq_rank_lineal_add_salRank (C : PointedCone R M) :
   have hlineal :
       (((C.lineal : Submodule R M) : PointedCone R M)).rank = Module.rank R C.lineal := by
     simpa [PointedCone.rank] using
-      congrArg (fun S : Submodule R M => Module.rank R S) (linSpan_inf_neg_eq_lineal (R := R) (M := M) C)
+      congrArg
+        (fun S : Submodule R M => Module.rank R S)
+        (linSpan_inf_neg_eq_lineal (R := R) (M := M) C)
   rw [hlineal, linSpan_lineal (R := R) (M := M) C] at h
   simpa [PointedCone.rank, PointedCone.salRank, PointedCone.salientQuot, add_comm] using h
 
 /-- Dimension-addition for finrank, split into lineality and salient quotient. -/
 lemma finrank_eq_finrank_lineal_add_salFinrank (C : PointedCone R M)
-    [Module.Finite R C.linSpan] :
+    (hC : C.FinRank) :
     C.finrank = Module.finrank R C.lineal + C.salFinrank := by
+  letI : Module.Finite R C.linSpan := Module.Finite.iff_fg.mpr hC
   have h := PointedCone.finrank_eq_finrank_add_finrank_quot_linSpan
-    (R := R) (M := M) (F := ((C.lineal : Submodule R M) : PointedCone R M)) (G := C) C.lineal_le
+    (R := R) (M := M) (F := ((C.lineal : Submodule R M) : PointedCone R M)) (G := C) hC C.lineal_le
   have hlineal :
       (((C.lineal : Submodule R M) : PointedCone R M)).finrank = Module.finrank R C.lineal := by
     simpa [PointedCone.finrank] using
@@ -530,20 +533,19 @@ lemma salRank_eq_rank_of_lineal_eq_bot (C : PointedCone R M) (hlineal : C.lineal
 
 /-- A cone with trivial lineality has salient finrank equal to finrank. -/
 lemma salFinrank_eq_finrank_of_lineal_eq_bot (C : PointedCone R M)
-    [Module.Finite R C.linSpan] (hlineal : C.lineal = ⊥) :
+    (hC : C.FinRank) (hlineal : C.lineal = ⊥) :
     C.salFinrank = C.finrank := by
-  have h := PointedCone.finrank_eq_finrank_lineal_add_salFinrank (R := R) (M := M) C
+  have h := PointedCone.finrank_eq_finrank_lineal_add_salFinrank (R := R) (M := M) C hC
   rw [hlineal] at h
   simpa [add_comm] using h.symm
 
 /-- In finite-dimensional span, salient rank is the cardinal cast of salient finrank. -/
-lemma salRank_eq_natCast_salFinrank (C : PointedCone R M) [Module.Finite R C.linSpan] :
+lemma salRank_eq_natCast_salFinrank (C : PointedCone R M) (hC : C.FinSalRank) :
     C.salRank = (C.salFinrank : Cardinal) := by
-  letI : Module.Finite R (C.salientQuot).linSpan := by
-    unfold PointedCone.salientQuot
-    exact PointedCone.moduleFinite_linSpan_quot_submodule
-      (R := R) (M := M) (G := C) (S := C.lineal)
-  change Module.rank R (C.salientQuot).linSpan = (Module.finrank R (C.salientQuot).linSpan : Cardinal)
+  letI : Module.Finite R (C.salientQuot).linSpan := Module.Finite.iff_fg.mpr hC
+  change
+    Module.rank R (C.salientQuot).linSpan =
+      (Module.finrank R (C.salientQuot).linSpan : Cardinal)
   exact (Module.finrank_eq_rank (R := R) (M := (C.salientQuot).linSpan)).symm
 
 end DivisionRing
